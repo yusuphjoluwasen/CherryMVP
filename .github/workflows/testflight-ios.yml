@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Resolve build configuration
         id: config
@@ -37,6 +39,7 @@ jobs:
           esac
           echo "configuration=$CONFIGURATION" >> "$GITHUB_OUTPUT"
           echo "app_env=$app_env" >> "$GITHUB_OUTPUT"
+          echo "build_number=$(date -u +%s)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -65,6 +68,7 @@ jobs:
       - name: Archive iOS app
         env:
           CONFIGURATION: ${{ steps.config.outputs.configuration }}
+          BUILD_NUMBER: ${{ steps.config.outputs.build_number }}
           APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
@@ -85,6 +89,7 @@ jobs:
             -authenticationKeyID "$APPSTORE_KEY_ID" \
             -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            FLUTTER_BUILD_NUMBER="$BUILD_NUMBER" \
             archive
 
       - name: Export App Store IPA

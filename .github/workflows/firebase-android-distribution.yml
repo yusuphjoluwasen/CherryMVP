@@ -13,6 +13,10 @@ on:
           - release-dev
           - release-prod
         default: debug-dev
+      distribution_group:
+        description: Firebase App Distribution group to notify
+        required: true
+        default: testers
 
 permissions:
   contents: read
@@ -25,6 +29,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Resolve build configuration
         id: config
@@ -103,7 +109,9 @@ jobs:
         env:
           APP_ENV: ${{ steps.config.outputs.app_env }}
           APK_PATH: ${{ steps.config.outputs.apk_path }}
+          DISTRIBUTION_GROUP: ${{ inputs.distribution_group }}
         run: |
+          test -n "$DISTRIBUTION_GROUP" || { echo "A Firebase App Distribution group is required" >&2; exit 1; }
           if [[ "$APP_ENV" == "dev" ]]; then
             app_id="1:401854471349:android:a4c4ddc4dbe5319585f2fc"
           else
@@ -112,6 +120,7 @@ jobs:
 
           firebase appdistribution:distribute "$APK_PATH" \
             --app "$app_id" \
+            --groups "$DISTRIBUTION_GROUP" \
             --release-notes "${APP_ENV} Android build ${GITHUB_SHA::7}"
 
       - name: Upload APK artifact
